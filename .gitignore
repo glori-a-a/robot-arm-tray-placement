@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Simulation output
+output/*.mp4
+output/*.png
+output/*.jpg
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# MuJoCo temp
+*.mjcf.bak

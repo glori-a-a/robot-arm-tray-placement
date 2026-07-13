@@ -1,0 +1,16 @@
+<!-- Rectangular tray: 30 cm x 15 cm x 0.5 cm -->
+<mujocoinclude>
+  <body name="rectangular_tray" pos="0.5 0.28 0.4025">
+    <geom name="tray_base" type="box" size="0.15 0.075 0.0025"
+          material="tray_material" friction="1.2 0.02 0.002" mass="0.15"/>
+    <geom name="tray_wall_x1" type="box" pos="0 0.072 0.004" size="0.15 0.003 0.006"
+          material="tray_rim" friction="1.0 0.02 0.002"/>
+    <geom name="tray_wall_x2" type="box" pos="0 -0.072 0.004" size="0.15 0.003 0.006"
+          material="tray_rim" friction="1.0 0.02 0.002"/>
+    <geom name="tray_wall_y1" type="box" pos="0.147 0 0.004" size="0.003 0.075 0.006"
+          material="tray_rim" friction="1.0 0.02 0.002"/>
+    <geom name="tray_wall_y2" type="box" pos="-0.147 0 0.004" size="0.003 0.075 0.006"
+          material="tray_rim" friction="1.0 0.02 0.002"/>
+    <site name="tray_center" pos="0 0 0.01" size="0.02" rgba="0 0 1 0.3"/>
+  </body>
+</mujocoinclude>
