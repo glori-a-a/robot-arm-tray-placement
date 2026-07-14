@@ -17,5 +17,10 @@ class RectangularTray:
     center_site_name = CENTER_SITE_NAME
 
     @classmethod
+    def top_surface_z(cls, table_top_z: float = 0.40) -> float:
+        """Top of the tray base (where the cylinder rests)."""
+        return table_top_z + cls.height
+
+    @classmethod
     def placement_height(cls, table_top_z: float = 0.40) -> float:
-        return table_top_z + cls.height / 2 + 0.002
+        return cls.top_surface_z(table_top_z) - cls.height / 2

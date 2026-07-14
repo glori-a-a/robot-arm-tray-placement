@@ -21,6 +21,7 @@ class RobotArm:
         self.gripper_site_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "gripper_site")
         self.dof_ids = np.arange(ARM_JOINT_COUNT)
         self.gripper_actuator_id = ARM_JOINT_COUNT
+        self.post_step = None
 
     @property
     def gripper_position(self) -> np.ndarray:
@@ -51,11 +52,16 @@ class RobotArm:
         position_gain: float = 2.5,
         rotation_gain: float = 1.0,
         damping: float = 0.08,
+        on_step=None,
     ) -> None:
         """Jacobian-based inverse kinematics to reach a Cartesian target."""
         if target_rotation is None:
             target_rotation = np.array(
-                [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]]
+                [
+                    [0.0, 1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0],
+                ]
             )
 
         target_quat = Rotation.from_matrix(target_rotation).as_quat()
@@ -89,8 +95,16 @@ class RobotArm:
             if gripper_opening is not None:
                 self.set_gripper(gripper_opening)
             mujoco.mj_step(self.model, self.data)
+            if self.post_step is not None:
+                self.post_step()
+            if on_step is not None:
+                on_step()
 
-    def wait(self, step_count: int = 200) -> None:
+    def wait(self, step_count: int = 200, on_step=None) -> None:
         self.hold_current_pose()
         for _ in range(step_count):
             mujoco.mj_step(self.model, self.data)
+            if self.post_step is not None:
+                self.post_step()
+            if on_step is not None:
+                on_step()
