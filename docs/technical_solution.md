@@ -149,7 +149,7 @@ python main.py
 python scripts/record_demo.py
 ```
 
-Demo video path: `output/demo.mp4`
+Demo video path: [`output/demo.mp4`](https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)
 
 ---
 
