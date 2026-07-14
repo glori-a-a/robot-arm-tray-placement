@@ -1,9 +1,9 @@
-<!-- Soft cylinder: diameter 2 cm, length 18 cm, non-smooth (bumpy) surface -->
 <mujocoinclude>
   <body name="soft_cylinder" pos="0.5 0.05 0.4140" quat="1 0 0 0">
     <freejoint/>
     <inertial mass="0.06" pos="0 0 0" diaginertia="0.000015 0.00008 0.00008"/>
     <geom name="cylinder_core" type="capsule" fromto="0 -0.0800 0 0 0.0800 0" size="0.0100" material="cylinder_material" friction="1.8 0.08 0.02" solimp="0.85 0.92 0.001" solref="0.04 1" rgba="0.92 0.42 0.12 1"/>
+    <geom name="cylinder_detect" type="sphere" size="0.016" pos="0 0 0.035" rgba="0.92 0.42 0.12 0.35" mass="1e-5" friction="0.05 0.005 0.0005"/>
     <geom name="bump_0" type="sphere" pos="0.01060 -0.07200 0.00000" size="0.0018" material="cylinder_material" friction="1.8 0.08 0.02" solimp="0.85 0.92 0.001" solref="0.04 1" rgba="0.92 0.42 0.12 1"/>
     <geom name="bump_1" type="sphere" pos="0.00767 -0.07200 0.00767" size="0.0023" material="cylinder_material" friction="1.8 0.08 0.02" solimp="0.85 0.92 0.001" solref="0.04 1" rgba="0.92 0.42 0.12 1"/>
     <geom name="bump_2" type="sphere" pos="0.00000 -0.07200 0.01087" size="0.0021" material="cylinder_material" friction="1.8 0.08 0.02" solimp="0.85 0.92 0.001" solref="0.04 1" rgba="0.92 0.42 0.12 1"/>
