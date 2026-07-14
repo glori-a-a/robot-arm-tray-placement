@@ -2,143 +2,97 @@
 
 ## Overview
 
-This project simulates a robot arm pick-and-place task.
+This project simulates a robot-arm pick-and-place task in **MuJoCo** with **Python**.
 
-A **Franka Emika Panda** arm picks up a **soft cylinder** and puts it in a **rectangular tray**. Everything runs in **MuJoCo**. The main code is **Python**.
+A **Franka Emika Panda** arm detects a compliant-contact cylinder and a rectangular tray with an overhead camera, approaches with Jacobian IK, validates the grasp, transports the object with a kinematic constraint, then releases it into the tray and evaluates placement.
 
-The full flow:
+Closed-loop flow:
 
-1. Build the scene (robot, table, cylinder, tray)
-2. Camera sensor finds object positions
-3. Arm moves above the cylinder
-4. Gripper closes
-5. Arm lifts the cylinder
-6. Arm moves to the tray
-7. Gripper opens
-8. Arm moves away
-
----
+camera detection → world-coordinate targets → Jacobian IK approach → grasp validation → constraint-assisted transport → physical (or assisted) release → settling → placement validation
 
 ## Tech stack
 
 | Layer | Tool |
 |-------|------|
-| Language | Python 3.12 |
-| Physics sim | MuJoCo 3.10 |
-| Robot model | Franka Emika Panda (MuJoCo Menagerie) |
+| Language | Python 3 |
+| Physics | MuJoCo 3.10 |
+| Robot | Franka Emika Panda (MuJoCo Menagerie) |
 | Math | NumPy, SciPy |
-| Vision | OpenCV, MuJoCo segmentation rendering |
-| Video | OpenCV VideoWriter |
+| Vision | MuJoCo segmentation rendering (+ OpenCV for video) |
+| Video | ffmpeg H.264 via `scripts/record_smooth_demo.py` |
 
-**Why MuJoCo?** PyBullet was tried first. It failed to build on Python 3.12 in this environment. MuJoCo has pre-built wheels. It is widely used in robotics research. Franka Panda models are easy to get.
+**Why MuJoCo?** PyBullet failed to build cleanly on Python 3.12 in this setup. MuJoCo provides wheels, research-grade contact models, and a Menagerie Panda asset.
 
----
+## Scene objects
 
-## Scene design
-
-### Robot
-
-- **Model:** Franka Emika Panda with parallel gripper
-- **Source:** [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
-- **Control:** 7 arm joints + 1 gripper actuator
-- **Motion:** Jacobian-based inverse kinematics ( damped least squares )
-
-### Soft cylinder
+### Cylinder (compliant-contact soft approximation)
 
 | Property | Value |
 |----------|-------|
 | Diameter | 2 cm |
 | Length | 18 cm |
-| Surface | Bumpy (48 small spheres + 1 capsule core) |
-| Contact | High friction, soft contact parameters |
-| Pose | Lying flat on the table (easier to grasp) |
+| Surface | Non-smooth (capsule core + bumps + localisation beacon) |
+| Contact | Soft `solref` / `solimp`, high friction |
+| Pose | Lying flat on the table |
 
-The bumpy surface is not smooth. Soft behavior comes from contact settings and low object mass.
+This is **not** a FEM / flex deformable body. Softness is approximated by contact compliance and low mass.
 
-### Rectangular tray
+### Tray
 
 | Property | Value |
 |----------|-------|
-| Length | 30 cm |
-| Width | 15 cm |
-| Height | 0.5 cm |
-| Extra | Low walls to keep the cylinder inside |
+| Length × width × height | 30 × 15 × 0.5 cm |
 
-### Environment
+### Robot and cameras
 
-- Checkered floor
-- Wooden work table (top at 40 cm height)
-- Two cameras: overhead (sensor) and side (demo video)
+- 7-DoF Panda + parallel gripper
+- Overhead RGB camera (offset in +X so the arm does not occlude the cylinder beacon)
+- Free camera for demo recording
 
----
+## Perception
 
-## Control flow
+1. Render overhead segmentation
+2. Find pixels belonging to the cylinder localisation beacon / tray geoms
+3. Project the pixel centroid onto a known plane (beacon height for the cylinder; table plane for the tray)
+4. Use detected **XY** as grasp / place targets (preserve Z from known geometry)
+5. Reject detections outside the workspace and fall back to the configured scene pose
 
-```
-main.py
-  └── SimulationEnvironment      → load MuJoCo scene
-  └── PickAndPlaceController
-        ├── ObjectDetector       → find cylinder + tray (bonus)
-        ├── RobotArm             → IK motion + gripper
-        └── attach / release     → carry cylinder during transport
-```
+Detected coordinates **drive** grasp and tray targets when valid.
 
-### Pick-and-place steps
+## Control
 
-1. Open gripper
-2. Run sensor detection
-3. Move above cylinder
-4. Move down to grasp height
-5. Close gripper
-6. Attach cylinder to gripper (contact assist)
-7. Lift
-8. Move above tray
-9. Move down
-10. Open gripper
-11. Retreat
+### Task states
 
-Success is checked by measuring the XY distance between the cylinder and tray center. Threshold: **10 cm**.
+`INITIALISING → DETECTING → APPROACHING → GRASPING → LIFTING → TRANSPORTING → PLACING → VERIFYING → COMPLETE|FAILED`
 
----
+### Inner loop
 
-## Sensor system (bonus)
+`RobotArm.move_gripper_to` returns whether Cartesian position/orientation tolerances were met (damped least-squares Jacobian IK).
 
-**Type:** Overhead RGB camera
+### Grasp assistance
 
-**Method:**
-1. Render the scene from the overhead camera
-2. Use MuJoCo **segmentation rendering** to find geometry IDs
-3. Compute the pixel centroid for the cylinder body and tray body
-4. Project the pixel onto the table plane (Z = 0.40 m)
-5. Use detected XY as motion targets (with sanity check vs default positions)
+After gripper close, `_validate_grasp_alignment` checks XY/Z alignment and closed command. Only then is a kinematic grasp constraint activated for transport.
 
-**Why segmentation?** Color-only detection was unreliable under simulation lighting. Segmentation uses geometry IDs. It is robust and still models a real vision pipeline (detect → localize → act).
+This is **not** equivalent to a fully contact-force-driven grasp.
 
-Console output example:
+### Placement modes
+
+| Mode | Behaviour |
+|------|-----------|
+| `physical_release` (default) | Carry above tray, stop syncing, open gripper, settle under gravity/contacts |
+| `assisted_release` | Explicit fallback: controlled kinematic lowering into the tray |
+
+### Success evaluation
+
+Checks tray XY bounds (with margin), rest height, and linear/angular speed thresholds. Console prints:
 
 ```
-[sensor] Cylinder found at x=0.558, y=0.049
-[sensor] Tray found at x=0.499, y=0.282
+[evaluation] inside_x=...
+[evaluation] inside_y=...
+[evaluation] height_ok=...
+[evaluation] stable=...
+[result] SUCCESS|FAILED
 ```
-
----
-
-## Files
-
-| File | Role |
-|------|------|
-| `main.py` | Entry point |
-| `simulation/environment.py` | Scene loading |
-| `simulation/robot_arm.py` | Arm + IK + gripper |
-| `simulation/soft_cylinder.py` | Cylinder constants |
-| `simulation/rectangular_tray.py` | Tray constants |
-| `simulation/pick_and_place_controller.py` | Task sequence |
-| `sensors/object_detector.py` | Camera detection |
-| `scripts/generate_soft_cylinder.py` | Build bumpy cylinder MJCF |
-| `scripts/record_demo.py` | Save demo video |
-| `assets/scene.xml` | Full MuJoCo scene |
-
----
 
 ## How to run
 
@@ -146,30 +100,28 @@ Console output example:
 pip install -r requirements.txt
 python scripts/generate_soft_cylinder.py
 python main.py
-python scripts/record_demo.py
+python main.py --no-sensor
+python main.py --randomize --seed 1
+python main.py --placement-mode assisted_release
+python scripts/record_smooth_demo.py
+python -m pytest -q
 ```
 
-Demo video path: [`output/demo.mp4`](https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)
+## Assumptions and limitations
 
----
+- Soft object = compliant-contact approximation (not FEM)
+- Transport uses a validated kinematic grasp constraint
+- Perception uses simulator segmentation (not a learned detector)
+- Pose is estimated on a known table/beacon plane
+- Mild free-joint damping is applied while settling after physical release
+- No obstacle avoidance, force/torque feedback, or hardware force control
+- Optional `--randomize` is experimental; large offsets can stress IK reachability
 
-## Assumptions
+## Future work
 
-- Cylinder lies flat on the table (length along X axis)
-- Robot base is fixed at the origin
-- Grasp uses top-down approach with parallel gripper
-- Soft grasp uses simulation contact assist after gripper close
-- Object positions are fixed at start (no random spawn)
-
----
-
-## Possible improvements
-
-- Real physics grasp without attach assist (force control)
-- Depth camera + point cloud for noisy detection
-- Vertical cylinder side-grasp
-- ROS 2 bridge for hardware transfer
-- RL-based grasp policy
-
----
-
+- Fully contact-driven grasp
+- MuJoCo flex / deformable body
+- Depth camera + point cloud
+- Force/torque feedback
+- Trajectory planning / domain randomisation
+- Real hardware transfer

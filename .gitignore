@@ -1,19 +1,26 @@
-# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
+.pytest_cache/
 
-# Simulation output
 output/*.mp4
 output/*.png
 output/*.jpg
 
-# OS / editor
 .DS_Store
 .idea/
 .vscode/
 
-# MuJoCo temp
 *.mjcf.bak
+*.b64
+FORCE_FIX.py
+WRITE_FIX.py
+fix_all.py
+install_me.py
+install_step.py
+install_tiny.py
+INSTALL_FROM_B64.sh
+apply_all_fixed.sh
+apply_fixes.sh

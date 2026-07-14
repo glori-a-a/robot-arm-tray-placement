@@ -35,9 +35,8 @@
       <geom name="table_top" type="box" size="0.35 0.30 0.025" material="table_material" friction="1.0 0.02 0.002"/>
     </body>
 
-    <!-- Overhead RGB camera for object detection -->
-    <camera name="overhead_rgb" pos="0.5 0.15 1.25" xyaxes="1 0 0 0 1 0" fovy="42"/>
-    <!-- Side camera for demo video -->
+    <!-- Offset in +X so the Panda arm does not occlude the cylinder beacon. -->
+    <camera name="overhead_rgb" pos="0.72 0.15 1.45" xyaxes="1 0 0 0 1 0" fovy="40"/>
     <camera name="demo_camera" pos="0.15 0.55 0.75" xyaxes="0.95 0 0.31 0 1 0" fovy="45"/>
   </worldbody>
 </mujoco>

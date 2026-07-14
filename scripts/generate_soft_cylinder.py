@@ -1,8 +1,3 @@
-"""Generate a soft, non-smooth cylinder MJCF include file.
-
-Spec: diameter ~2 cm, length ~18 cm, non-smooth surface, soft contact.
-"""
-
 from __future__ import annotations
 
 import math
@@ -26,7 +21,6 @@ def build_xml() -> str:
     center_z = TABLE_TOP_Z + radius + REST_CLEARANCE
 
     lines = [
-        "<!-- Soft cylinder: diameter 2 cm, length 18 cm, non-smooth (bumpy) surface -->",
         "<mujocoinclude>",
         f'  <body name="soft_cylinder" pos="0.5 0.05 {center_z:.4f}" quat="1 0 0 0">',
         "    <freejoint/>",
@@ -35,10 +29,12 @@ def build_xml() -> str:
         f'fromto="0 -{half_shaft:.4f} 0 0 {half_shaft:.4f} 0" size="{radius:.4f}" '
         f'material="cylinder_material" {SOFT_FRICTION} {SOFT_SOLIMP} {SOFT_SOLREF} '
         f'rgba="{CORE_RGBA}"/>',
+        # Overhead localisation beacon (body XY origin, slightly above shaft).
+        '    <geom name="cylinder_detect" type="sphere" size="0.016" pos="0 0 0.035" '
+        f'rgba="0.92 0.42 0.12 0.35" mass="1e-5" friction="0.05 0.005 0.0005"/>',
     ]
 
-    # Non-smooth bumps on sides/top only — never on the bottom contact zone
-    # so the rod cannot visually sink into the table/tray.
+    # bumps
     rows = 10
     cols = 8
     bump_idx = 0
@@ -48,7 +44,7 @@ def build_xml() -> str:
             angle = (col / cols) * 2 * math.pi + row * 0.22
             local_z = math.sin(angle)
             if local_z < -0.15:
-                continue  # skip underside
+                continue
             bump_r = radius + 0.0006 + 0.0003 * abs(math.sin(row * 1.7 + col))
             x = bump_r * math.cos(angle)
             z = bump_r * local_z
@@ -69,7 +65,7 @@ if __name__ == "__main__":
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     xml = build_xml()
     OUTPUT.write_text(xml)
-    bump_count = xml.count('type="sphere"')
+    bump_count = xml.count('type="sphere"') - 1
     print(f"Wrote {OUTPUT}")
     print(f"  diameter={CYLINDER_DIAMETER*100:.0f} cm, length={CYLINDER_HEIGHT*100:.0f} cm")
-    print(f"  non-smooth bumps={bump_count} (sides/top only), soft contact enabled")
+    print(f"  non-smooth bumps={bump_count}, detect beacon enabled")

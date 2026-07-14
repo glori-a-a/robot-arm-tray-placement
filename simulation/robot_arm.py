@@ -1,5 +1,3 @@
-"""Franka Emika Panda robot arm control."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -12,8 +10,6 @@ GRIPPER_CLOSED = 20.0
 
 
 class RobotArm:
-    """Controls the Franka Panda arm and parallel gripper."""
-
     def __init__(self, model: mujoco.MjModel, data: mujoco.MjData):
         self.model = model
         self.data = data
@@ -22,6 +18,8 @@ class RobotArm:
         self.dof_ids = np.arange(ARM_JOINT_COUNT)
         self.gripper_actuator_id = ARM_JOINT_COUNT
         self.post_step = None
+        self.position_tolerance = 0.008
+        self.rotation_tolerance = 0.08
 
     @property
     def gripper_position(self) -> np.ndarray:
@@ -30,6 +28,10 @@ class RobotArm:
     @property
     def gripper_orientation(self) -> np.ndarray:
         return self.data.site_xmat[self.gripper_site_id].reshape(3, 3).copy()
+
+    @property
+    def gripper_command(self) -> float:
+        return float(self.data.ctrl[self.gripper_actuator_id])
 
     def set_gripper(self, opening: float) -> None:
         self.data.ctrl[self.gripper_actuator_id] = opening
@@ -53,9 +55,11 @@ class RobotArm:
         rotation_gain: float = 1.0,
         damping: float = 0.08,
         on_step=None,
-    ) -> None:
-        """Jacobian-based inverse kinematics to reach a Cartesian target."""
+        position_tolerance: float | None = None,
+        rotation_tolerance: float | None = None,
+    ) -> bool:
         if target_rotation is None:
+            # grasp pose
             target_rotation = np.array(
                 [
                     [0.0, 1.0, 0.0],
@@ -64,13 +68,14 @@ class RobotArm:
                 ]
             )
 
-        target_quat = Rotation.from_matrix(target_rotation).as_quat()
-        target_quat = np.array([target_quat[3], target_quat[0], target_quat[1], target_quat[2]])
+        pos_tol = self.position_tolerance if position_tolerance is None else position_tolerance
+        rot_tol = self.rotation_tolerance if rotation_tolerance is None else rotation_tolerance
 
         jac_pos = np.zeros((3, self.model.nv))
         jac_rot = np.zeros((3, self.model.nv))
         error_pos = np.zeros(3)
         error_rot = np.zeros(3)
+        reached = False
 
         for _ in range(step_count):
             current_position = self.gripper_position
@@ -81,7 +86,8 @@ class RobotArm:
             current_rot = Rotation.from_matrix(current_rotation)
             error_rot[:] = (target_rot * current_rot.inv()).as_rotvec()
 
-            if np.linalg.norm(error_pos) < 0.004 and np.linalg.norm(error_rot) < 0.04:
+            if np.linalg.norm(error_pos) < pos_tol and np.linalg.norm(error_rot) < rot_tol:
+                reached = True
                 break
 
             mujoco.mj_jacSite(self.model, self.data, jac_pos, jac_rot, self.gripper_site_id)
@@ -99,6 +105,15 @@ class RobotArm:
                 self.post_step()
             if on_step is not None:
                 on_step()
+
+        if not reached:
+            error_pos[:] = target_position - self.gripper_position
+            target_rot = Rotation.from_matrix(target_rotation)
+            current_rot = Rotation.from_matrix(self.gripper_orientation)
+            error_rot[:] = (target_rot * current_rot.inv()).as_rotvec()
+            reached = np.linalg.norm(error_pos) < pos_tol * 1.5 and np.linalg.norm(error_rot) < rot_tol * 1.5
+
+        return bool(reached)
 
     def wait(self, step_count: int = 200, on_step=None) -> None:
         self.hold_current_pose()
