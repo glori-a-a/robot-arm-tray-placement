@@ -11,6 +11,12 @@ A Franka Emika Panda arm picks up a soft cylinder and places it in a rectangular
 - Show the full motion in simulation
 - **Bonus:** overhead camera finds the cylinder and tray before motion starts
 
+## Demo
+
+Full pick-and-place recording (approach → grasp → pick → place):
+
+**[Watch on Google Drive](https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)**
+
 ## Quick start
 
 ```bash
