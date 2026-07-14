@@ -1,21 +1,19 @@
 # Robot Arm Tray Placement
 
-Simulated pick-and-place task for a robotics assignment.
-
 A Franka Emika Panda arm picks up a soft cylinder and places it in a rectangular tray. The scene runs in **MuJoCo** with Python control code.
-
-## Task
-
-- Grasp a soft cylinder (~2 cm diameter, 18 cm length)
-- Place it in a rectangular tray (~30 × 15 × 0.5 cm)
-- Show the full motion in simulation
-- **Bonus:** overhead camera finds the cylinder and tray before motion starts
 
 ## Demo
 
 Full pick-and-place recording (approach → grasp → pick → place):
 
 **[Watch on Google Drive](https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)**
+
+## Features
+
+- Soft cylinder (~2 cm diameter, 18 cm length), non-smooth surface
+- Rectangular tray (~30 × 15 × 0.5 cm)
+- Full motion: approach → grasp → pick → place
+- Overhead camera object detection (bonus)
 
 ## Quick start
 
@@ -33,15 +31,8 @@ python scripts/record_smooth_demo.py
 
 Output: `output/demo.mp4`
 
-Interactive viewer:
-
 ```bash
 python main.py --viewer
-```
-
-Skip camera detection:
-
-```bash
 python main.py --no-sensor
 ```
 
@@ -64,21 +55,16 @@ robot-arm-tray-placement/
 |------|--------|
 | Language | Python 3 |
 | Simulator | MuJoCo 3 |
-| Robot | Franka Emika Panda (MuJoCo Menagerie URDF/MJCF) |
-| Gripper | Parallel finger gripper (built into Panda model) |
-| Sensor | Overhead RGB camera + segmentation rendering |
+| Robot | Franka Emika Panda (MuJoCo Menagerie) |
+| Gripper | Parallel finger gripper |
+| Sensor | Overhead RGB camera + segmentation |
 | Motion | Jacobian inverse kinematics |
 
 ## Notes
 
-- PyBullet was the first choice but it does not install cleanly on Python 3.12 here. MuJoCo is a common research simulator and works well for this task.
-- The cylinder uses many small spheres plus a capsule core. This gives a bumpy, soft-like surface and low stiffness contact.
-- Soft grasp is assisted in simulation when finger contact is detected. Real hardware would rely on force control and compliance.
-
-## Author
-
-Individual assignment solution — independent from other projects in this workspace.
-
+- PyBullet did not install cleanly on Python 3.12 in this setup, so MuJoCo is used instead.
+- The cylinder uses a capsule core plus small surface bumps (non-smooth) with soft contact parameters.
+- Grasp in simulation uses contact assist after the gripper closes; real hardware would use force control / compliance.
 
 ## License
 
