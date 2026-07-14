@@ -28,7 +28,7 @@ python main.py
 Record a demo video:
 
 ```bash
-python scripts/record_demo.py
+python scripts/record_smooth_demo.py
 ```
 
 Output: `output/demo.mp4`
@@ -79,17 +79,6 @@ robot-arm-tray-placement/
 
 Individual assignment solution — independent from other projects in this workspace.
 
-## Submission (for Rohan)
-
-See `docs/SUBMISSION_CHECKLIST.md` and `docs/EMAIL_DRAFT.md`.
-
-Quick steps:
-1. `./setup.sh`
-2. `./push_to_github.sh YOUR_GITHUB_USERNAME`
-3. Upload `output/demo.mp4` to Google Drive
-4. Email Rohan with repo link + video link + `docs/technical_solution.md`
-
-Submission zip (optional): `/home/ubuntu/robot-arm-tray-placement-submission.zip`
 
 ## License
 
