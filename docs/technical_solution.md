@@ -173,10 +173,3 @@ Demo video path: `output/demo.mp4`
 
 ---
 
-## Deliverables checklist
-
-- [x] Technical document (this file)
-- [x] Working code + assets
-- [x] Demo video (`output/demo.mp4`)
-
-For the email to Rohan, upload `output/demo.mp4` to Google Drive / Dropbox and share the link.
