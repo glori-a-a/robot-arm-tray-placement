@@ -6,7 +6,7 @@ A Franka Emika Panda arm picks up a compliant-contact cylindrical object and pla
 
 Full pick-and-place recording (approach → grasp → pick → place):
 
-**[Watch on Google Drive](https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)**
+**[Watch on Google Drive][(https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)](https://drive.google.com/file/d/1c7roGvv89SkuV1bBFw05vYxOQRZuegVU/view?usp=sharing)**
 
 ## Features
 
