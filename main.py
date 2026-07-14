@@ -77,8 +77,16 @@ def main() -> None:
     if args.viewer:
         import mujoco.viewer
 
-        with mujoco.viewer.launch_passive(environment.model, environment.data) as viewer:
-            result = controller.run()
+        with mujoco.viewer.launch_passive(
+            environment.model,
+            environment.data,
+        ) as viewer:
+
+            def sync_viewer() -> None:
+                if viewer.is_running():
+                    viewer.sync()
+
+            result = controller.run(on_step=sync_viewer)
             while viewer.is_running():
                 viewer.sync()
     else:
